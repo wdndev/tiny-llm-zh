@@ -109,7 +109,7 @@ ALL_ARGS=" $GPT_ARGS $GENERATE_ARGS "
 export CMD="python eval.py $ALL_ARGS "
 echo $CMD
 
-# 导出
+# 评估
 $CMD
 
 echo "Eval successful : ${OUTPUT_DIR}"
