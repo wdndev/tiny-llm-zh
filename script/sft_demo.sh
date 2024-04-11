@@ -30,7 +30,7 @@ LR=3e-4
 LR_SCHEDULER_TYPE="cosine"
 WARMUP_RATION=0.05
 
-TRAIN_EPOCHS=5          # 训练轮次
+TRAIN_EPOCHS=2          # 训练轮次
 LOGGING_STEPS=100       # 记录日志步数
 CKPT_SAVE_STEPS=10000    # ckpt保存步数
 

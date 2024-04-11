@@ -1,15 +1,54 @@
-# tiny-llama2-zh
+# tiny-llm-zh
 
 ## 1.简介
 
-本项目旨在构建一个小参数量的中文Llama2大语言模型，包含：预训练 -> SFT指令微调 -> RLHF -> 量化。
+本项目旨在构建一个小参数量的中文大语言模型，模型架构主要来自Llama2，包含：预训练 -> SFT指令微调 -> RLHF -> 量化。
 
 注意：
 1. 因资源限制，本项目第一要务是将大模型整个流程走通，而不是调教比较好的效果。
-2. 前期训练的预训练模型和SFT模型效果还行，能过得去；在训练RM模型时，由于基础模型效果不好，训练RM模型Loss不对，无法训练出一个较好的RM模型，只是将后续流程走通。
+2. 前期训练的预训练模型和SFT模型效果还行，能过得去；在训练RM模型时，由于基础模型未考虑到后续，奖励模型训练有问题，正在重新修改基础模型。
 
 
 ## 2.快速开始
+
+暂时只上传了 58m 的微调模型，运行下面的代码，可直接下载。
+
+如果程序下载困难，可到Hugging Face链接 [hf_tiny_llm_58m_sft](https://huggingface.co/wdndev/hf_tiny_llm_58m_sft)，下载全部的文件，放入本地目录中，更新`model_id`中的路径为本地目录，即可运行。
+
+```python
+from transformers import AutoModelForCausalLM, AutoTokenizer
+import torch
+
+model_id = "wdndev/hf_tiny_llm_58m_sft"
+tokenizer = AutoTokenizer.from_pretrained(model_id, trust_remote_code=True) 
+model = AutoModelForCausalLM.from_pretrained(model_id, device_map="auto", trust_remote_code=True)
+
+# text = "介绍一下刘德华。"
+# text = "请问，世界上最大的动物是什么？"
+text = "中国的首都在什么地方？"
+
+# 哎。。。，SFT时没有注意这个特殊的token，拼接了prompt和answer，使用HF时，词表中没有这个，，，难受
+model_inputs_id = tokenizer.encode(text, add_special_tokens=False) + [tokenizer.special_tokens['<bos>']]
+model_inputs_id = (torch.tensor(model_inputs_id, dtype=torch.long, device=model.device)[None, ...])
+generated_ids = model.generate(model_inputs_id)
+generated_ids = [
+    output_ids[len(input_ids):] for input_ids, output_ids in zip(model_inputs_id, generated_ids)
+]
+response = tokenizer.batch_decode(generated_ids, skip_special_tokens=True)[0]
+
+print(response)
+```
+生成效果
+```bash
+问：介绍一下刘德华。
+答：刘德华是中国著名的演员、歌手、电影制片人、音乐制作人、演员和导演。他因创作的电影作品深受观众喜爱，并经常获得奥斯卡最佳男主角奖。
+
+问：请问，世界上最大的动物是什么？
+答：中国的首都在北京。
+
+问：中国的首都在什么地方？
+答：蓝鲸是世界上最大的动物。
+```
 
 
 
@@ -373,16 +412,153 @@ SFT指令微调预料都来自[Hugging Face](https://huggingface.co/)，主要�
 
 ### 5.2 SFT指令微调预料构建
 
+SFT指令构建格式为 : `question + <bos> + answer + <eos>`，因为SFT微调数据量较小，可以在加载数据集时做tokenizer。
 
+部分处理数据处理如下所示，先将数据保存为二进制文件
+
+```python
+def process_bell_2m(file_path, tokenizer):
+    """ https://huggingface.co/datasets/BelleGroup/train_2M_CN
+    """
+
+    token_ids = []
+    with open(file_path, 'r', encoding='utf-8') as infile:
+        lines = infile.readlines()
+    for line in tqdm(lines):
+        json_obj = json.loads(line)  # 解析json字符串为python对象
+        
+        instruction = json_obj["instruction"]
+        input_str = json_obj["input"]
+        answer = json_obj["output"]
+        
+        question = instruction + input_str
+        
+        if len(question) < 10 and len(answer) < 1:
+            continue
+        
+        prompt_id = tokenizer.encode(question, add_special_tokens=False)
+        answer_id = tokenizer.encode(answer, add_special_tokens=False)
+        
+        text_id = prompt_id + [tokenizer.special_tokens['<bos>']] + answer_id + [tokenizer.special_tokens['<eos>']]
+
+        if len(text_id) > 5:
+            token_ids.append(text_id)
+        
+    return token_ids
+```
+
+数据加载 `SFTDataset`，这部分主要是 `inputs_ids` 和 `labels`的构造，`SFTDataset`类输出方式和[DLLXW/baby-llama2-chinese](https://github.com/DLLXW/baby-llama2-chinese)项目加载方式类似，直接返回`X`、`Y`和`loss_mask`。因训练代码使用 Transformers库，在训练代码中，还需进一步处理。
+
+`loss_mask`作用：在SFT时，`question + <bos> + answer + <eos>`中只有 `answer`计算loss，其他不用计算loss，所以一种方式是使用`loss_mask`，屏蔽不需要计算loss的部分
+
+```python
+class SFTDataset(Dataset):
+    def __init__(self, data_path_list, max_length=256, tokenizer=None):
+        self.data = []
+        # ...
+        
+    def __len__(self):
+        return len(self.data)
+    
+    def __getitem__(self, index : int):
+        input_id = self.data[index]
+        # ...
+        
+        input_id = np.array(input_id)
+        X = np.array(input_id[:-1]).astype(np.int64)
+        Y = np.array(input_id[1:]).astype(np.int64)
+        loss_mask = np.array(loss_mask[:-1])
+        #
+        return torch.from_numpy(X), torch.from_numpy(Y), torch.from_numpy(loss_mask)
+```
+
+训练部分数据处理
+
+```python
+def data_collator_fn(examples):
+    # 将所有样本的输入 (`X`) 和标签 (`Y`) 分别堆叠
+    input_ids = torch.stack([example[0] for example in examples])
+    labels = torch.stack([example[1] for example in examples])
+    loss_mask = torch.stack([example[2] for example in examples])
+
+    # 返回一个字典，包含模型需要的键和值
+    data_dict = {
+        "input_ids": input_ids,
+        "labels": labels,
+        "loss_mask": loss_mask
+    }
+    return data_dict
+```
 
 ### 5.3 SFT指令微调脚本
 
+Python训练脚本见 `sft_train.py`文件所示，与预训练不同的是loss的计算，需要重载loss计算函数，具体代码如下所示。
 
+```python
+class SFTTrainer(Trainer):
+    def compute_loss(self, model, inputs, return_outputs=False):
+        # print("loss inputs: ", inputs)
+        X = inputs["input_ids"]
+        Y = inputs["labels"]
+        loss_mask = inputs["loss_mask"]
+        outputs = model(X, Y)
+        logits = outputs.get("logits")
+        loss = nn.functional.cross_entropy(logits.view(-1, logits.size(-1)), Y.view(-1), ignore_index=0,reduce=False)
+        loss_mask = loss_mask.view(-1)
+        loss = torch.sum(loss * loss_mask) / loss_mask.sum()
+        if return_outputs:
+            return (loss, logits)
+        return loss
+```
+
+训练启动脚本见 `script/sft_demo.sh`所示。该启动脚本，支持多机多卡训练，支持ZeRO优化；只需修改部分参数，就可以训练不同尺寸，适应不同机器的训练。如果使用训练，主要修改的部分如下：
+
+```bash
+# 常见参数修改，根据自己机器修改
+N_NODES=2
+N_GPUS=8
+RANK=0
+MASTER_ADDR="11.73.240.171"
+MASTER_PORT=1234
+
+# 单卡bs， 根据自己机器修改
+MBS=2 
+
+# 训练精度
+DS_DTYPE="fp16" # [fp16, bf16]
+# 是否加载模型继续训练，注意，若没有checkpoint，指定为True会报错
+RESUME="False"
+
+# 训练类型，ptm不用指定 BASE_MODEL_PATH 参数，其他类型需要
+MODE="sft" # [ptm, sft, rm, rl]
+# 训练数据文件夹
+DATASET_DIR="data/pre_train/baidubaike"
+BASE_MODEL_PATH="/wangdongnian/personal/tiny-llama2.zh/outputs/ckpt/ptm_tiny_llama2_24m_epoch3/checkpoint-1010000/pytorch_model.bin"
+
+# 模型尺寸
+MODEL_SIZE="24m" # [9m, 24m, 58m, 134m, 268m]
+
+```
+
+其他地方，根据自己需要修改，大部分不需要修改。
 
 ### 5.4 SFT指令微调Loss曲线
 
+训练方式为：所有SFT训练数据，全部过 2 个epoch后停止，没有早停。
 
+因在不同机器训练，batch_size不同，横轴显示步数，所有曲线结束不一致，但全部都是按照上述训练结束。
 
+![alt text](images/image-2.png)
+
+最终Loss对比
+
+| model            | end loss  |
+| ---------------- | ---- |
+| tiny-llama2-9m   | 2.77   |
+| tiny-llama2-24m  | 2.466 |
+| tiny-llama2-58m  | 2.081  |
+| tiny-llama2-134m | 1.824  |
+| tiny-llama2-256m | 1.644 |
 
 
 ### 5.5  微调 SFT 模型对话效果
@@ -391,63 +567,53 @@ SFT指令微调预料都来自[Hugging Face](https://huggingface.co/)，主要�
 
 #### （1）Pytorch方式加载
 
+模型测试见 `eval.py`，启动脚本位于 `script/eval.sh`，对于不同的模型，只需修改部分参数，即可运行。
+
 
 
 
 
 #### （2）Hugging Face方式加载
 
+如果程序下载困难，可到Hugging Face链接 [hf_tiny_llm_58m_sft](https://huggingface.co/wdndev/hf_tiny_llm_58m_sft)，下载全部的文件，放入本地目录中，更新`model_id`中的路径为本地目录，即可运行。
+
+```python
+from transformers import AutoModelForCausalLM, AutoTokenizer
+import torch
+
+model_id = "wdndev/hf_tiny_llm_58m_sft"
+tokenizer = AutoTokenizer.from_pretrained(model_id, trust_remote_code=True) 
+model = AutoModelForCausalLM.from_pretrained(model_id, device_map="auto", trust_remote_code=True)
+
+# text = "介绍一下刘德华。"
+# text = "请问，世界上最大的动物是什么？"
+text = "中国的首都在什么地方？"
+
+# 哎。。。，SFT时没有注意这个特殊的token，拼接了prompt和answer，使用HF时，词表中没有这个，，，难受
+model_inputs_id = tokenizer.encode(text, add_special_tokens=False) + [tokenizer.special_tokens['<bos>']]
+model_inputs_id = (torch.tensor(model_inputs_id, dtype=torch.long, device=model.device)[None, ...])
+generated_ids = model.generate(model_inputs_id)
+generated_ids = [
+    output_ids[len(input_ids):] for input_ids, output_ids in zip(model_inputs_id, generated_ids)
+]
+response = tokenizer.batch_decode(generated_ids, skip_special_tokens=True)[0]
+
+print(response)
+```
+生成效果
+```bash
+问：介绍一下刘德华。
+答：刘德华是中国著名的演员、歌手、电影制片人、音乐制作人、演员和导演。他因创作的电影作品深受观众喜爱，并经常获得奥斯卡最佳男主角奖。
+
+问：请问，世界上最大的动物是什么？
+答：中国的首都在北京。
+
+问：中国的首都在什么地方？
+答：蓝鲸是世界上最大的动物。
+```
 
 
-
-
-
-
-
-
-## 6.RLHF
-
-### 6.1 RM模型
-
-奖励模型，就是一个打分模型，能够**判断模型对于同一个 prompt 的不同输出，哪个更好，哪个更差**。
-
-具体地，需要一批人类标注的对不同回答的排序数据，然后基于这样的排序，构造得分，或者更简单一点——构造标签，然后训练一个 regression 模型来打分。
-
-#### （1）RM模型训练语料
-
-SFT指令微调预料都来自[Hugging Face](https://huggingface.co/)，主要包含以下几个经典的RM模型训练数据集，大约有17w条，详细数据集如下：
-
-| SFT微调数据    | 链接 | 描述                                            |
-| ----------------- | ---- | ----------------------------------------------- |
-| rlhf-reward-single-round     |  [rlhf-reward-single-round](https://huggingface.co/datasets/beyond/rlhf-reward-single-round-trans_chinese)  | rlhf-reward-single-round 翻译数据集 |
-| zhihu_rlhf_3k | [zhihu_rlhf_3k](https://huggingface.co/datasets/liyucheng/zhihu_rlhf_3k) | zhihu_rlhf_3k |                     |
-| CValues-Comparison | [CValues-Comparison](https://www.modelscope.cn/datasets/iic/CValues-Comparison/summary) | 中文大模型价值观比较数据集 |
-|                   |      |                                                 |
-
-数据集中，每个prompt都对应一个"chosen"字段和一个"rejected"字段，分别代表一个更好的回答和一个更差的回答。
-
-#### （2）训练脚本
-
-
-
-### 6.2 RL模型
-
-
-todo
-
-
-## 7.DPO
-
-todo
-
-
-
-## 8.量化
-
-todo
-
-
-## 9.鸣谢
+## 6.鸣谢
 
 感谢下面这些开源项目，本项目实现有不少地方参考各个项目。
 
