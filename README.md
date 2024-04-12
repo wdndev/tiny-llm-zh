@@ -88,7 +88,7 @@ LLM分词器的构建方式有两种：一种是自己构造词表，训练一�
 
 #### （1）预训练预料
 
-本次训练的预训练预料都来自[Hugging Face](https://huggingface.co/)，主要包含以下几个经典的中文数据集，大约有19B左右Token，详细数据集如下：
+本次训练的预训练预料都来自[Hugging Face](https://huggingface.co/)，主要包含以下几个经典的中文数据集，大约有6B左右Token，详细数据集如下：
 
 | 中文预训练语料    | 链接 | 描述                                            |
 | ----------------- | ---- | ----------------------------------------------- |
@@ -209,7 +209,7 @@ MODEL_SIZE="24m" # [9m, 24m, 58m, 134m, 268m]
 | tiny-llama2-58m  | 3.538  |
 | tiny-llama2-134m | 3.127  |
 | tiny-llama2-256m | 2.919 |
-|                   |      | 
+|                   |      |
 
 #### （5）预训练 Base 模型续写效果
 
@@ -334,7 +334,7 @@ OUTPUT_DIR="outputs/ckpt/${MODEL_NAME}_epoch${TRAIN_EPOCHS}"
 | tiny-llama2-webnovel-24m  | 4.093  |
 | tiny-llama2-webnovel-58m  | 3.67  |
 | tiny-llama2-webnovel-134m | 3.229  |
-|                   |      | 
+|                   |      |
 
 #### （4）模型续写效果
 
