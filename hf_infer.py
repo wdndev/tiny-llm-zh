@@ -6,9 +6,10 @@ model_id = "wdndev/hf_tiny_llm_58m_sft"
 tokenizer = AutoTokenizer.from_pretrained(model_id, trust_remote_code=True) 
 model = AutoModelForCausalLM.from_pretrained(model_id, device_map="auto", trust_remote_code=True)
 
-text = "介绍一下刘德华。"
+# text = "介绍一下刘德华。"
 # text = "请问，世界上最大的动物是什么？"
-# text = "中国的首都在什么地方？"
+text = "中国的首都在什么地方？"
+# text = "请用C++语言实现一个冒泡排序算法。"
 
 start_time = time.time()
 
