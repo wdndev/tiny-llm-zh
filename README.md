@@ -1,4 +1,4 @@
-# Tiny LLM zh
+# Tiny LLM MoE zh
 
 ## 1.简介
 
