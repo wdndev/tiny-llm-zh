@@ -10,7 +10,7 @@
 
 本项目主要有三个分支，推荐学习 主分支，具体区别如下：
 
-- `llama2_torch` ： 模型架构采用原版 Llama2 架构，只是将部分的输入输出修改为适合训练的格式；
+- [llama2_torch](https://github.com/wdndev/tiny-llm-zh/tree/llama2_torch) ： 模型架构采用原版 Llama2 架构，只是将部分的输入输出修改为适合训练的格式；
 - `main`   `tiny_llm` ： 对齐开源社区模型，使用Transformers库构建底层模型，也使用Transformers库进行多卡多机训练；
 - `tiny_llm_moe` ： 在`tiny_llm`的基础上，修改 `MLP`层为MoE模型，使用Transformers库进行多卡多机训练。
 
