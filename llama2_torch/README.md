@@ -1,4 +1,4 @@
-# Tiny LLM zh
+# Llama2 Torch
 
 ## 1.简介
 
