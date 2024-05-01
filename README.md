@@ -25,38 +25,39 @@
 建议使用Huggingface 下载，如果Huggingface 下载失败，再使用 ModeScope 下载模型后，修改`model_id`中的路径为本地目录，即可运行。
 
 ```python
-from transformers import AutoModelForCausalLM, AutoTokenizer
-import torch
+from transformers import AutoTokenizer, AutoModelForCausalLM
 
-model_id = "wdndev/hf_tiny_llm_58m_sft"
-tokenizer = AutoTokenizer.from_pretrained(model_id, trust_remote_code=True) 
+model_id = "wdndev/tiny_llm_sft_92m"
+
+tokenizer = AutoTokenizer.from_pretrained(model_id, trust_remote_code=True)
 model = AutoModelForCausalLM.from_pretrained(model_id, device_map="auto", trust_remote_code=True)
 
-# text = "介绍一下刘德华。"
-# text = "请问，世界上最大的动物是什么？"
-text = "中国的首都在什么地方？"
+sys_text = "你是由wdndev开发的个人助手。"
+# user_text = "世界上最大的动物是什么？"
+# user_text = "介绍一下刘德华。"
+user_text = "介绍一下中国。"
+input_txt = "\n".join(["<|system|>", sys_text.strip(), 
+                        "<|user|>", user_text.strip(), 
+                        "<|assistant|>"]).strip() + "\n"
 
-# 哎。。。，SFT时没有注意这个特殊的token，拼接了prompt和answer，使用HF时，词表中没有这个，，，难受
-model_inputs_id = tokenizer.encode(text, add_special_tokens=False) + [tokenizer.special_tokens['<bos>']]
-model_inputs_id = (torch.tensor(model_inputs_id, dtype=torch.long, device=model.device)[None, ...])
-generated_ids = model.generate(model_inputs_id)
+model_inputs = tokenizer(input_txt, return_tensors="pt").to(model.device)
+generated_ids = model.generate(model_inputs.input_ids, max_new_tokens=200)
 generated_ids = [
-    output_ids[len(input_ids):] for input_ids, output_ids in zip(model_inputs_id, generated_ids)
+    output_ids[len(input_ids):] for input_ids, output_ids in zip(model_inputs.input_ids, generated_ids)
 ]
 response = tokenizer.batch_decode(generated_ids, skip_special_tokens=True)[0]
-
 print(response)
 ```
 生成效果
 ```bash
+问：世界上最大的动物是什么？
+答：目前已知最大的动物是蓝鲸（Balaenoptera musculus），这是一个庞大的哺乳动物，属于须鲸亚目、须鲸科中的最大物种。蓝鲸的身长可达30米以上，体重可达175吨。它们在海洋中生活，主要以浮游生物为食，如甲壳类动物和小型鱼类等。由于其巨大的体型和复杂的生态群落，蓝鲸成为海洋旅游的热门景点之一。
+
 问：介绍一下刘德华。
-答：刘德华是中国著名的演员、歌手、电影制片人、音乐制作人、演员和导演。他因创作的电影作品深受观众喜爱，并经常获得奥斯卡最佳男主角奖。
+答：刘德华是一位香港流行歌手、演员和导演，他在音乐界的贡献非常巨大。他是华语乐坛历史上最伟大的艺人之一，代表作品包括《爱我身体》和《肥皂泡》。他也经常参演电影和电视剧，并在电视上受到好评。
 
-问：中国的首都在什么地方？
-答：中国的首都在北京。
-
-问：请问，世界上最大的动物是什么？
-答：蓝鲸是世界上最大的动物。
+问：介绍一下中国。
+答：中国是位于东亚的大陆，被欧洲以及亚洲和其他大陆所包围。它是中国第二大文明和世界上最大的经济体之一。中国的历史可以追溯到公元前5000年左右，从古至今都有其独特的文化和语言传承者。
 
 ```
 

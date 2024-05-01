@@ -1,14 +1,15 @@
 from transformers import AutoTokenizer, AutoModelForCausalLM
 
 model_id = "wdndev/tiny_llm_sft_92m"
+model_id = "outputs/ckpt/tiny_llm_sft_92m"
 
 tokenizer = AutoTokenizer.from_pretrained(model_id, trust_remote_code=True)
 model = AutoModelForCausalLM.from_pretrained(model_id, device_map="auto", trust_remote_code=True)
 
 sys_text = "你是由wdndev开发的个人助手。"
-# user_text = "中国的首都是哪儿？"
-# user_text = "你叫什么名字？"
-user_text = "介绍一下中国"
+# user_text = "世界上最大的动物是什么？"
+# user_text = "介绍一下刘德华。"
+user_text = "介绍一下中国。"
 input_txt = "\n".join(["<|system|>", sys_text.strip(), 
                         "<|user|>", user_text.strip(), 
                         "<|assistant|>"]).strip() + "\n"
