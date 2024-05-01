@@ -8,6 +8,11 @@
 
 实现细节：实现大模型两阶段训练及后续人类对齐，即：预训练(PTM) -> 指令微调(SFT) -> 人类对齐(RLHF, DPO) -> 测评。
 
+项目已部署，可以在如下两个网站上体验，国内推荐ModeScope。
+
+- [HuggingFace Tiny LLM](https://huggingface.co/spaces/wdndev/tiny_llm_sft_92m_demo)
+- [ModeScope Tiny LLM](https://www.modelscope.cn/studios/wdndev/tiny_llm_92m_demo/summary)
+
 本项目主要有三个分支，推荐学习 主分支，具体区别如下：
 
 - [llama2_torch](https://github.com/wdndev/tiny-llm-zh/tree/llama2_torch) ： 模型架构采用原版 Llama2 架构，只是将部分的输入输出修改为适合训练的格式；
@@ -22,7 +27,7 @@
 
 建议使用 Huggingface 在线加载模型，如果运行不了，在试 ModeScope ；如果需要本地运行，修改`model_id`中的路径为本地目录，即可运行。
 
-#### 🤗 Huggingface
+#### 🤗 HuggingFace
 
 ```python
 from transformers import AutoTokenizer, AutoModelForCausalLM
