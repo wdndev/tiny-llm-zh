@@ -14,15 +14,15 @@
 - `main`   `tiny_llm` ： 对齐开源社区模型，使用Transformers库构建底层模型，也使用Transformers库进行多卡多机训练；
 - [tiny_llm_moe](https://github.com/wdndev/tiny-llm-zh/tree/tiny_llm_moe) ： 在`tiny_llm`的基础上，修改 `MLP`层为MoE模型，使用Transformers库进行多卡多机训练。
 
-注意：
-
-1. 因资源限制，本项目的第一要务是走通大模型整个流程，而不是调教比较好的效果，故评测结果分数较低，部分生成结构错误。
+注意：因资源限制，本项目的第一要务是走通大模型整个流程，而不是调教比较好的效果，故评测结果分数较低，部分生成错误。
 
 ## 2.快速开始
 
-模型已托管在 Huggingface 和 ModeScope 中，可运行代码自动下载。
+模型已托管在 [Huggingface](https://huggingface.co/wdndev/tiny_llm_sft_92m) 和 [ModeScope](https://www.modelscope.cn/models/wdndev/tiny_llm_sft_92m) 中，可运行代码自动下载。
 
-建议使用Huggingface 下载，如果Huggingface 下载失败，再使用 ModeScope 下载模型后，修改`model_id`中的路径为本地目录，即可运行。
+建议使用 Huggingface 在线加载模型，如果运行不了，在试 ModeScope ；如果需要本地运行，修改`model_id`中的路径为本地目录，即可运行。
+
+#### 🤗 Huggingface
 
 ```python
 from transformers import AutoTokenizer, AutoModelForCausalLM
@@ -48,6 +48,35 @@ generated_ids = [
 response = tokenizer.batch_decode(generated_ids, skip_special_tokens=True)[0]
 print(response)
 ```
+
+#### 🤖 ModeScope
+
+```python
+from modelscope import AutoModelForCausalLM, AutoTokenizer
+
+model_id = "wdndev/tiny_llm_sft_92m"
+
+tokenizer = AutoTokenizer.from_pretrained(model_id, trust_remote_code=True)
+model = AutoModelForCausalLM.from_pretrained(model_id, device_map="auto", trust_remote_code=True)
+
+sys_text = "你是由wdndev开发的个人助手。"
+# user_text = "世界上最大的动物是什么？"
+# user_text = "介绍一下刘德华。"
+user_text = "介绍一下中国。"
+input_txt = "\n".join(["<|system|>", sys_text.strip(), 
+                        "<|user|>", user_text.strip(), 
+                        "<|assistant|>"]).strip() + "\n"
+
+model_inputs = tokenizer(input_txt, return_tensors="pt").to(model.device)
+generated_ids = model.generate(model_inputs.input_ids, max_new_tokens=200)
+generated_ids = [
+    output_ids[len(input_ids):] for input_ids, output_ids in zip(model_inputs.input_ids, generated_ids)
+]
+response = tokenizer.batch_decode(generated_ids, skip_special_tokens=True)[0]
+print(response)
+```
+
+
 生成效果
 ```bash
 问：世界上最大的动物是什么？
