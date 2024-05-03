@@ -8,9 +8,8 @@
 
 实现细节：实现大模型两阶段训练及后续人类对齐，即：预训练(PTM) -> 指令微调(SFT) -> 人类对齐(RLHF, DPO) -> 测评。
 
-项目已部署，可以在如下两个网站上体验，国内推荐ModeScope。
+项目已部署，可以在如下网站上体验。
 
-- [HuggingFace Tiny LLM](https://huggingface.co/spaces/wdndev/tiny_llm_sft_92m_demo)
 - [ModeScope Tiny LLM](https://www.modelscope.cn/studios/wdndev/tiny_llm_92m_demo/summary)
 
 本项目主要有三个分支，推荐学习 主分支，具体区别如下：
@@ -31,12 +30,13 @@
 
 ```python
 from transformers import AutoTokenizer, AutoModelForCausalLM
+from transformers.generation import GenerationConfig
 
 model_id = "wdndev/tiny_llm_sft_92m"
 
 tokenizer = AutoTokenizer.from_pretrained(model_id, trust_remote_code=True)
 model = AutoModelForCausalLM.from_pretrained(model_id, device_map="auto", trust_remote_code=True)
-
+generation_config = GenerationConfig.from_pretrained(model_id, trust_remote_code=True)
 sys_text = "你是由wdndev开发的个人助手。"
 # user_text = "世界上最大的动物是什么？"
 # user_text = "介绍一下刘德华。"
@@ -45,8 +45,9 @@ input_txt = "\n".join(["<|system|>", sys_text.strip(),
                         "<|user|>", user_text.strip(), 
                         "<|assistant|>"]).strip() + "\n"
 
+generation_config.max_new_tokens = 200
 model_inputs = tokenizer(input_txt, return_tensors="pt").to(model.device)
-generated_ids = model.generate(model_inputs.input_ids, max_new_tokens=200)
+generated_ids = model.generate(model_inputs.input_ids, generation_config=generation_config)
 generated_ids = [
     output_ids[len(input_ids):] for input_ids, output_ids in zip(model_inputs.input_ids, generated_ids)
 ]

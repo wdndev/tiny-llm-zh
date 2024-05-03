@@ -4,3 +4,6 @@ __pycache__
 outputs
 infer_chat_template.py
 infer_base.py
+cli_demo.py
+infer_test.py
+web_demo2.py
