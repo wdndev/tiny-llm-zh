@@ -6,6 +6,7 @@ Tiny LLM 模型架构
 
 import math
 import warnings
+from threading import Thread
 from typing import List, Optional, Tuple, Union
     
 import torch
@@ -21,8 +22,10 @@ from transformers.modeling_outputs import BaseModelOutputWithPast, CausalLMOutpu
 from transformers.modeling_utils import PreTrainedModel
 from transformers.utils import logging
 from transformers.generation.utils import GenerationConfig
+from transformers.generation.logits_process import LogitsProcessorList
 
-from configuration_tinyllm import TinyllmConfig
+from .configuration_tinyllm import TinyllmConfig
+from .generation_utils import TextIterStreamer, make_context, OutputRepetitionPenaltyLogitsProcessor, parse_pot_no_stream
 
 logger = logging.get_logger(__name__)
 
@@ -147,8 +150,14 @@ def apply_rotary_pos_emb(q, k, cos, sin, position_ids, unsqueeze_dim=1):
     Returns:
         包含使用旋转位置嵌入变换后的q和k张量的 `tuple(torch.Tensor)`。
     """
+    # print("ori cos: ", cos.shape)
     cos = cos[position_ids].unsqueeze(unsqueeze_dim)
     sin = sin[position_ids].unsqueeze(unsqueeze_dim)
+
+    # print("q: ", q.shape)
+    # print("cos: ", cos.shape)
+    # print("sin: ", sin.shape)
+    # print("rotate_half: ", rotate_half(q).shape)
     q_embed = (q * cos) + (rotate_half(q) * sin)
     k_embed = (k * cos) + (rotate_half(k) * sin)
     return q_embed, k_embed
@@ -842,8 +851,76 @@ class TinyllmForCausalLM(TinyllmPreTrainedModel):
             )
         return reordered_past
     
-    def chat(self, tokenizer, messages: List[dict], stream=False, generation_config: Optional[GenerationConfig]=None):
-        pass
+    def generate(
+        self,
+        inputs: Optional[torch.Tensor] = None,
+        generation_config: Optional[GenerationConfig] = None,
+        streamer = None,
+        **kwargs,
+    ):
+        if generation_config is None:
+            response = super().generate(
+                inputs,
+                generation_config=generation_config,
+                streamer=streamer,
+                **kwargs,
+            )
+
+            return response
+        repetition_penalty = kwargs.pop("repetition_penalty", generation_config.repetition_penalty)
+        generation_config.repetition_penalty = 1.0
+
+        logits_processor = None
+        if repetition_penalty > 1.0:
+            # warnings.warn("We highly recommend using OpenAI's frequency and presence penalty instead of the original repetition penalty. The original repetition penalty penalizes prompt tokens, which may lead to various potential issues. Therefore, your repetition penalty coefficient will be transformed into frequency penalty and presence penalty.", UserWarning)
+            presence_penalty  = repetition_penalty - 1.0
+            frequency_penalty = repetition_penalty - 1.0
+            logits_processor = LogitsProcessorList(
+                [OutputRepetitionPenaltyLogitsProcessor(inputs.size(1), presence_penalty, frequency_penalty, 1.0)]
+            )
+        
+        response = super().generate(
+            inputs,
+            generation_config=generation_config,
+            logits_processor=logits_processor,
+            streamer=streamer,
+            **kwargs,
+        )
+        generation_config.repetition_penalty = repetition_penalty
+        return response
+    
+    def chat(
+        self, 
+        tokenizer, 
+        messages: List[dict], 
+        system: str = "你是由wdndev开发的个人助手。",
+        stream=False, 
+        use_pot=True,
+        generation_config: Optional[GenerationConfig]=None
+    ):
+        
+        generation_config = generation_config or self.generation_config
+        input_ids = make_context(
+            model=self, tokenizer=tokenizer, messages=messages,
+            system=system, max_new_tokens=generation_config.max_new_tokens
+        )
+
+        for inputs in input_ids:
+            print("decode: ", tokenizer.decode(inputs))
+        
+        if stream:
+            streamer = TextIterStreamer(tokenizer, skip_prompt=True, skip_special_tokens=True, use_pot=use_pot)
+            Thread(target=self.generate, kwargs=dict(
+                inputs=input_ids, streamer=streamer,
+                generation_config=generation_config,
+            )).start()
+            return streamer
+        else:
+            outputs = self.generate(input_ids, generation_config=generation_config)
+            response = tokenizer.decode(outputs[0][len(input_ids[0]):], skip_special_tokens=True)
+            if use_pot:
+                response = parse_pot_no_stream(response)
+            return response
 
 class TinyllmForSequenceClassification(TinyllmPreTrainedModel):
     def __init__(self, config):
@@ -937,7 +1014,7 @@ class TinyllmForSequenceClassification(TinyllmPreTrainedModel):
             if self.config.problem_type == "regression":
                 # 使用均方误差损失函数
                 loss_fct = MSELoss()
-                 # 如果num_labels为1，则直接计算单输出的损失；否则，按列计算所有输出的损失
+                # 如果num_labels为1，则直接计算单输出的损失；否则，按列计算所有输出的损失
                 if self.num_labels == 1:
                     loss = loss_fct(pooled_logits.squeeze(), labels.squeeze())
                 else:
@@ -1046,5 +1123,5 @@ if __name__ == "__main__":
     print(outputs.logits)
     print(outputs.loss)
     
-    print_model_parameters(model)
+    # print_model_parameters(model)
         
