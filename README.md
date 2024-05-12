@@ -118,7 +118,7 @@ LLM分词器的构建方式有两种：一种是自己构造词表，训练一�
 
 具体参数细节如下所示：
 
-| model            | hidden size | intermediate_size | n_layers | n_heads | max context length | params | vocab size |
+| model            | hidden size | intermediate size | n_layers | n_heads | max context length | params | vocab size |
 | ---------------- | ----------- | ----------------- | -------- | ------- | ------------------ | ------ | ---------- |
 | tiny-llm-16m     | 120   | 384        | 6       | 6          | 512                | 16M     | 64798      |
 | tiny-llm-42m     | 288   | 768        | 6       | 6          | 512                | 42M     | 64798      |
@@ -128,6 +128,22 @@ LLM分词器的构建方式有两种：一种是自己构造词表，训练一�
 | tiny-llm-1_5b    | 2048  | 5504       | 24      | 16         | 1024               | 1.5B    | 64798      |
 |  |  |  |  |  |  |  |  |
 
+### 3.4 模型评估
+
+因训练数据和微调数据，大部分都是中文数据，所以在`C-Eval`和`CMMLU`这两个数据集上进行模型的评估；使用[OpenCompass](https://github.com/open-compass/opencompass)工具，进行模型评估，评估分数如下所示：
+
+| model            | Type  | C-Eval  |  CMMLU  |
+| ---------------- | ----- | ------- | ------- |
+| tiny-llm-92m     | Base   | 23.48  | 25.02   |
+| tiny-llm-92m     | Chat   | 26.79  | 26.59   |
+
+Base模型，采用评测方式 ppl 方式进行评测；Chat模型，采用 gen 方式评测。具体区别如下图所示：
+
+![ppl gen](doc/images/ppl_gen.png)
+
+> 来源：[ppl和gen模式有什么区别](https://github.com/open-compass/opencompass/discussions/597)
+
+注意：只对常用的两个模型进行了评测，分数较低，其余模型评测意义不大。
 
 
 ## 4.Demo
