@@ -1,8 +1,9 @@
 from transformers import AutoTokenizer, AutoModelForCausalLM
 from transformers.generation import GenerationConfig
 
+# model_id = "outputs/ckpt/tiny_llm_sft_92m"
 model_id = "wdndev/tiny_llm_sft_92m"
-model_id = "outputs/ckpt/tiny_llm_sft_92m"
+
 
 tokenizer = AutoTokenizer.from_pretrained(model_id, trust_remote_code=True)
 model = AutoModelForCausalLM.from_pretrained(model_id, device_map="auto", trust_remote_code=True)

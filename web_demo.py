@@ -7,7 +7,8 @@ from transformers.generation.utils import GenerationConfig
 st.set_page_config(page_title="Tiny LLM 92M Demo")
 st.title("Tiny LLM 92M Demo")
 
-model_id = "outputs/ckpt/tiny_llm_sft_92m"
+# model_id = "outputs/ckpt/tiny_llm_sft_92m"
+model_id = "wdndev/tiny_llm_sft_92m"
 
 @st.cache_resource
 def load_model_tokenizer():
