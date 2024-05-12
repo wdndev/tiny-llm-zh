@@ -29,6 +29,18 @@
 
 建议使用 Huggingface 在线加载模型，如果运行不了，在试 ModeScope ；如果需要本地运行，修改`model_id`中的路径为本地目录，即可运行。
 
+#### 依赖安装
+
+- python 3.8 and above
+- pytorch 2.0 and above
+- transformers 4.37.2 and above
+- CUDA 11.4 and above are recommended. (if training)
+
+```bash
+pip install -r requirements.txt 
+```
+
+
 #### 🤗 HuggingFace
 
 ```python

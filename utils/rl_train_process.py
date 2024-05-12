@@ -5,7 +5,6 @@ import numpy as np
 from tqdm import tqdm
 import pandas as pd
 import csv
-import pickle
 
 
 def merge_datsets(input_dir):

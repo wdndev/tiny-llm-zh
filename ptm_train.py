@@ -29,7 +29,6 @@ from transformers import (
     set_seed,
 )
 from transformers.utils.versions import require_version
-from sklearn.metrics import accuracy_score
 from transformers.trainer_utils import PREFIX_CHECKPOINT_DIR
 
 from configuration_tinyllm import TinyllmConfig

@@ -1,0 +1,9 @@
+deepspeed==0.10.2
+transformers>=4.37.2,<=4.38.2
+datasets
+accelerate
+sentencepiece
+streamlit
+flask
+pandas
+numpy
