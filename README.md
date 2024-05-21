@@ -6,11 +6,21 @@
 
 模型架构：整体模型架构采用开源通用架构，包括：RMSNorm，RoPE，MHA等
 
-实现细节：实现大模型两阶段训练及后续人类对齐，即：分词(Tokenizer) -> 预训练(PTM) -> 指令微调(SFT) -> 人类对齐(RLHF, DPO) -> 测评。
+实现细节：实现大模型两阶段训练及后续人类对齐，即：分词(Tokenizer) -> 预训练(PTM) -> 指令微调(SFT) -> 人类对齐(RLHF, DPO) -> 测评 -> 部署。
 
 项目已部署，可以在如下网站上体验。
 
 - [ModeScope Tiny LLM](https://www.modelscope.cn/studios/wdndev/tiny_llm_92m_demo/summary)
+
+项目特点：
+
+- 公开全部数据及代码，包括预训练数据，tokenizer等；（70多个G的token，正在上传）
+- 走通大模型整个流程：分词(Tokenizer) -> 预训练(PTM) -> 指令微调(SFT) -> 人类对齐(RLHF, DPO) -> 测评 -> 部署；
+- 公开预训练token 35B，SFT数据400w条，RL数据 17w条；
+- 训练 Tokenizer：10G 中文百科文本训练 20K 中文词表，与 Llama2 词表合并，构建Tiny LLM词表；
+- 使用 Transformers deepspeed 进行训练，支持多级多卡，支持 Zero 等优化技术；
+- 所有代码 `Bash` 脚本启动，支持不同大小的模型，如16m, 42m, 92m, 210m, 440m等；
+- 支持 MoE 架构，在 [tiny_llm_moe](https://github.com/wdndev/tiny-llm-zh/tree/tiny_llm_moe) 支持最新最新共享专家，平衡专家等技术；
 
 本项目主要有三个分支，推荐学习 主分支，具体区别如下：
 
@@ -22,6 +32,7 @@
 
 1. 因资源限制，本项目的第一要务是走通大模型整个流程，而不是调教比较好的效果，故评测结果分数较低，部分生成错误。
 2. 详细的数据处理，训练过程见 `doc` 文件夹（正在整理。。。）
+
 
 ## 2.快速开始
 
@@ -119,7 +130,7 @@ LLM分词器的构建方式有两种：一种是自己构造词表，训练一�
 
 本项目为了方便，从优秀的开源项目中选择词表，考虑到训练的模型较小，且词表大小影响模型大小，故优先选择词表较小的开源项目；经过比较，最终选择 [ChatGLM3](https://huggingface.co/THUDM/chatglm3-6b) 的词表，该词表大小为 64798 。
 
-自己构造词表方式见 `tokenizer`，扩充 LLaMA2的32K词表为50K，增加20K中文词表，详细扩充方式见文档或`tokenizer/README.md`.
+自己构造词表方式见 [tokenizer](tokenizer/)，扩充 LLaMA2的32K词表为50K，增加20K中文词表，详细扩充方式见[文档](./doc/)或[tokenizer/README.md](./tokenizer/README.md).
 
 注意：本项目使用的ChatGLM3的词表。
 
