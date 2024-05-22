@@ -613,7 +613,6 @@ class TinyllmModel(TinyllmPreTrainedModel):
                 (batch_size, seq_length),
                 inputs_embeds,
                 past_key_values_length,
-                sliding_window=self.config.sliding_window,
             )
 
         hidden_states = inputs_embeds
