@@ -14,13 +14,14 @@
 
 项目特点：
 
-- 公开全部数据及代码，包括预训练数据，tokenizer等；（70多个G的token，正在上传）
+- 公开全部数据及代码，包括预训练数据，tokenizer等；（[Tiny LLM Datasets](doc/datasets_download.md)）
 - 走通大模型整个流程：分词(Tokenizer) -> 预训练(PTM) -> 指令微调(SFT) -> 人类对齐(RLHF, DPO) -> 测评 -> 部署；
 - 公开预训练token 35B，SFT数据400w条，RL数据 17w条；
 - 训练 Tokenizer：10G 中文百科文本训练 20K 中文词表，与 Llama2 词表合并，构建Tiny LLM词表；
 - 使用 Transformers deepspeed 进行训练，支持多机多卡，支持 Zero 等优化技术；
 - 所有代码 `Bash` 脚本启动，支持不同大小的模型，如16m, 42m, 92m, 210m, 440m等；
 - 支持 MoE 架构，在 [tiny_llm_moe](https://github.com/wdndev/tiny-llm-zh/tree/tiny_llm_moe) 支持最新共享专家，平衡专家等技术；
+
 
 
 本项目主要有三个分支，推荐学习 主分支，具体区别如下：
@@ -138,8 +139,6 @@ LLM分词器的构建方式有两种：一种是自己构造词表，训练一�
 ### 3.2 模型结构
 
 模型结构采用类Llama2的结构，具体包括：RMSNorm，RoPE，MHA等；
-
-特色：采用Transformers库构建模型，重载`generate`生成函数，将重复惩罚优化为频率惩罚和存在惩罚；支持流式生成；
 
 
 ### 3.3 模型尺寸
