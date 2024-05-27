@@ -10,8 +10,8 @@ model = AutoModelForCausalLM.from_pretrained(model_id, device_map="auto", trust_
 generation_config = GenerationConfig.from_pretrained(model_id, trust_remote_code=True)
 sys_text = "你是由wdndev开发的个人助手。"
 # user_text = "世界上最大的动物是什么？"
-# user_text = "介绍一下刘德华。"
-user_text = "介绍一下中国。"
+user_text = "介绍一下刘德华。"
+# user_text = "介绍一下中国。"
 input_txt = "\n".join(["<|system|>", sys_text.strip(), 
                         "<|user|>", user_text.strip(), 
                         "<|assistant|>"]).strip() + "\n"

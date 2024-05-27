@@ -1,3 +1,4 @@
+import os
 import pickle
 import jsonlines
 import hashlib
@@ -5,7 +6,7 @@ import random
 import pandas as pd
 import numpy as np
 from typing import Optional, Dict
-from torch.utils.data import Dataset,DataLoader
+from torch.utils.data import Dataset, DataLoader
 import torch
 from sklearn.model_selection import train_test_split
 from utils.chatglm3_tokenizer.tokenization_chatglm import ChatGLMTokenizer
@@ -14,7 +15,7 @@ import datasets
 
 
 class PTMDataset(Dataset):
-    def __init__(self, data_path_list, max_length=256, memmap=False):
+    def __init__(self, data_path_list, max_length=512, memmap=False):
         super(PTMDataset, self).__init__()
         #
         if memmap:
@@ -40,18 +41,59 @@ class PTMDataset(Dataset):
         
     def __len__(self):
         return self.data.shape[0]
-        
-    # def __getitem__(self, index: int):
-    #     #
-    #     sample = self.data[index]
-    #     X=np.array(sample[:-1]).astype(np.int64)
-    #     Y=np.array(sample[1:]).astype(np.int64)
-        
-    #     return torch.from_numpy(X), torch.from_numpy(Y)
 
     def __getitem__(self, index: int):
         index = self.shuffle_index[index]
         sample = self.data[index]
+        X = np.array(sample[:-1]).astype(np.int64)
+        Y = np.array(sample[1:]).astype(np.int64)
+        input_ids = torch.LongTensor(X)
+        labels = torch.LongTensor(Y)
+
+        return {
+            "input_ids": input_ids,
+            "labels": labels,
+        }
+
+class PTMDatasetMap(Dataset):
+    """ 数据集类，使用内存映射处理大文件数据，以节省内存。
+    """
+    def __init__(self, data_path_list: list, max_length=512):
+        super(PTMDatasetMap, self).__init__()
+        
+        self.data = []          # 存储每个文件的内存映射数据
+        self.index_map = {}     # 索引映射，便于快速定位样本
+        self.token_size = 0     # token数
+        self.data_size = 0      # 样本数量
+
+        for idx, file_path in enumerate(data_path_list):
+            with open(file_path, 'r') as f:
+                nbytes = f.seek(0, 2)
+                flen = f.tell() // np.dtype('uint16').itemsize
+            
+            # 更新统计信息和索引映射
+            self.token_size += flen
+            self.index_map.update({self.data_size + i : (idx, i) for i in range(flen // max_length)})
+            self.data_size += flen // max_length
+
+            # 使用内存映射读取数据
+            self.data.append(np.memmap(file_path, dtype=np.dtype('uint16'), shape=(flen // max_length, max_length)))
+
+        print('total token size: {:,} token,  data sample size: [{:,}, {}]'.format(self.token_size, self.data_size, max_length))
+
+        # 初始化时生成随机索引列表
+        self.shuffled_indices = list(self.index_map.keys())
+        random.shuffle(self.shuffled_indices)
+
+        # print(self.shuffled_indices)
+        
+    def __len__(self):
+        return self.data_size
+
+    def __getitem__(self, index: int):
+        real_index = self.shuffled_indices[index]
+        fi, i = self.index_map[real_index]
+        sample = self.data[fi][i]
         X = np.array(sample[:-1]).astype(np.int64)
         Y = np.array(sample[1:]).astype(np.int64)
         input_ids = torch.LongTensor(X)
@@ -476,11 +518,11 @@ def load_dpo_dataset(
         and len(x["prompt"]) + len(x["rejected"]) <= max_length
     )
 
-    dataset_map.set_format(type="torch")
+    # dataset_map.set_format(type="torch")
 
     return dataset_map
 
-if __name__=="__main__":
+if __name__=="__main__1":
     tokenizer = ChatGLMTokenizer(vocab_file='utils/chatglm3_tokenizer/tokenizer.model')
 
     # sft_data_path = "data/sft_train/sft_data_test.jsonl"
@@ -512,5 +554,36 @@ if __name__=="__main__":
         # print(Y[0])
         # print(loss_mask[0])
         break
+
+if __name__=="__main__":
+    tokenizer = ChatGLMTokenizer(vocab_file='utils/chatglm3_tokenizer/tokenizer.model')
+
+    ptm_data_dir = "data/pre_train"
+    def get_bin_files_abs_paths(directory):
+        bin_files_paths = []
+        for root, dirs, files in os.walk(directory):
+            for file in files:
+                if file.endswith('.bin'):
+                    bin_files_paths.append(os.path.abspath(os.path.join(root, file)))
+        return bin_files_paths
+    # data_path_list = glob.glob(os.path.join(script_args.dataset_dir_or_path, '*.bin'))
+    data_path_list = get_bin_files_abs_paths(ptm_data_dir)
+    if len(data_path_list) == 0:
+        logger.error("***************NO INPUT DATA********************")
     
+    train_ds = PTMDatasetMap(data_path_list, max_length = 512)
+
+    train_loader = torch.utils.data.DataLoader(
+        train_ds,
+        batch_size=32,
+        pin_memory=False,
+        drop_last=False,
+        shuffle=False,        
+        num_workers=8,
+    )
+    print(len(train_loader))
+    # for i, item in enumerate(train_loader):
+    #     print(item)
+    #     if i > 10:
+    #         break
     
