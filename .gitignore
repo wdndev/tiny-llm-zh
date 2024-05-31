@@ -2,6 +2,7 @@
 __pycache__
 
 outputs
+data
 infer_chat_template.py
 infer_base.py
 cli_demo.py
