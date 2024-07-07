@@ -221,7 +221,7 @@ fi
 # 所有参数
 ALL_ARGS=" $GPT_ARGS $TRAIN_ARGS $SCRIPT_ARGS "
 
-LAUNCHER="torchrun $DISTRIBUTED_ARGS sft_train.py "
+LAUNCHER="torchrun $DISTRIBUTED_ARGS train/sft_train.py "
 
 export CMD="$LAUNCHER $ALL_ARGS"
 echo $CMD
