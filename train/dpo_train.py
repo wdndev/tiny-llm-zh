@@ -226,5 +226,6 @@ if __name__ == "__main__":
 
     # 7. save
     output_dir = os.path.join(script_args.output_dir, "last_dpo_model")
+    tokenizer.save_pretrained(output_dir)
     dpo_trainer.save_model(output_dir)
     # dpo_trainer.model.save_pretrained(output_dir)

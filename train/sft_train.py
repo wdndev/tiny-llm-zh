@@ -184,6 +184,7 @@ def main():
     # torch.save(model.state_dict(),'{}/last_model.pth'.format(training_args.output_dir))
     last_model_dir = os.path.join(training_args.output_dir, 'last_sft_model')
     os.makedirs(last_model_dir, exist_ok=True)
+    tokenizer.save_pretrained(last_model_dir)
     # # https://github.com/huggingface/transformers/issues/28630
     # model.save_pretrained(last_model_dir, safe_serialization=False)
     trainer.save_model(output_dir=last_model_dir)
