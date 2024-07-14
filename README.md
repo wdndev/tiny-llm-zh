@@ -6,7 +6,7 @@
 
 模型架构：整体模型架构采用开源通用架构，包括：RMSNorm，RoPE，MHA等
 
-实现细节：实现大模型两阶段训练及后续人类对齐，即：分词(Tokenizer) -> 预训练(PTM) -> 指令微调(SFT) -> 人类对齐(RLHF, DPO) -> 测评 -> 部署。
+实现细节：实现大模型两阶段训练及后续人类对齐，即：分词(Tokenizer) -> 预训练(PTM) -> 指令微调(SFT) -> 人类对齐(RLHF, DPO) -> 测评 -> 量化 -> 部署。
 
 项目已部署，可以在如下网站上体验。
 
@@ -23,7 +23,6 @@
 - 支持 MoE 架构，在 [tiny_llm_moe](https://github.com/wdndev/tiny-llm-zh/tree/tiny_llm_moe) 支持最新共享专家，平衡专家等技术；
 - 支持 vLLM 推理框架；
 - 支持 llama.cpp 推理框架；
-
 
 
 本项目主要有三个分支，推荐学习 主分支，具体区别如下：
