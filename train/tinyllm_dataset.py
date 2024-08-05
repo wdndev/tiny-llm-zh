@@ -94,14 +94,14 @@ class PTMDatasetMap(Dataset):
         real_index = self.shuffled_indices[index]
         fi, i = self.index_map[real_index]
         sample = self.data[fi][i]
-        X = np.array(sample[:-1]).astype(np.int64)
-        Y = np.array(sample[1:]).astype(np.int64)
+        X = np.array(sample).astype(np.int64)
+        # Y = np.array(sample[1:]).astype(np.int64)
         input_ids = torch.LongTensor(X)
-        labels = torch.LongTensor(Y)
+        # labels = torch.LongTensor(Y)
 
         return {
             "input_ids": input_ids,
-            "labels": labels,
+            "labels": input_ids.clone(),
         }
 
 class SFTDataset(Dataset):
