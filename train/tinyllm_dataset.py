@@ -45,14 +45,14 @@ class PTMDataset(Dataset):
     def __getitem__(self, index: int):
         index = self.shuffle_index[index]
         sample = self.data[index]
-        X = np.array(sample[:-1]).astype(np.int64)
-        Y = np.array(sample[1:]).astype(np.int64)
+        X = np.array(sample).astype(np.int64)
+        # Y = np.array(sample[1:]).astype(np.int64)
         input_ids = torch.LongTensor(X)
-        labels = torch.LongTensor(Y)
+        # labels = torch.LongTensor(Y)
 
         return {
             "input_ids": input_ids,
-            "labels": labels,
+            "labels": input_ids.clone(),
         }
 
 class PTMDatasetMap(Dataset):
