@@ -10,3 +10,4 @@ infer_test.py
 web_demo2.py
 demo/fast_api_demo.py
 demo/resq.py
+quantize
