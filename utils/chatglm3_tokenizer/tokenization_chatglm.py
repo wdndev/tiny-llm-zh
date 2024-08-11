@@ -152,6 +152,8 @@ class ChatGLMTokenizer(PreTrainedTokenizer):
             **kwargs
         )
 
+        # self.chat_template = "{% for message in messages %}{% if loop.first %}<|{{ message['role'] }}|>\n {{ message['content'] }}{% else %}<|{{ message['role'] }}|>\n {{ message['content'] }}{% endif %}{% endfor %}{% if add_generation_prompt %}<|assistant|>{% endif %}"
+
     def get_command(self, token):
         """ 获取指定特殊 token 对应的 id
         """

@@ -1,4 +1,4 @@
-from utils.chatglm3_tokenizer.tokenization_chatglm import ChatGLMTokenizer
+from chatglm3_tokenizer.tokenization_chatglm import ChatGLMTokenizer
 import json
 import torch
 
@@ -27,43 +27,30 @@ def process_func(prompt_txt:str, user_txt:str, assistant_txt:str, max_length=512
     }
 
 if __name__=="__main__":
-    tokenizer = ChatGLMTokenizer(vocab_file='utils/tokenizer/tokenizer.model')
+    tokenizer = ChatGLMTokenizer(vocab_file='chatglm3_tokenizer/tokenizer.model')
     
-    vocab = tokenizer.get_vocab()
-    print(len(vocab))
-    print(tokenizer.vocab_size)
-    # tokenizer.save_vocabulary(save_directory="test")
-    # with open('vocab_utf8.txt', 'w', encoding='utf-8') as f:
-    #     json.dump(vocab, f, indent=4)
-    text = "家牛的体重范围是多少？" + "\n"
-    # encode_1 = tokenizer(text)
-    encode_2 = tokenizer.encode(text)
+    sys_text = "你是由wdndev开发的个人助手。"
+    user_text = "介绍一下中国。"
+    input_txt = "\n".join(["<|system|>", sys_text.strip(), 
+                            "<|user|>", user_text.strip(), 
+                            "<|assistant|>"]).strip() + "\n"
+    
+    model_inputs = tokenizer([input_txt], return_tensors="pt")
 
-    # print(encode_1)
-    print(encode_2)
+    print(tokenizer.batch_decode(model_inputs["input_ids"]))
 
-    # print(tokenizer.decode(encode_1["input_ids"]))
-    print(tokenizer.decode(encode_2))
-    
-    # sys = "你是由wdndev开发的个人助手。"
-    # q = "家牛的体重范围是多少？"
-    # a = "公牛：800-900千克，母牛：600-700千克"
-    
-    # inputs = process_func(sys, q, a)
-    
-    # for i in range(512):
-    #     print(str(inputs["input_ids"][i]) + " " + str(inputs["labels"][i]) + " " + str(inputs["attention_mask"][i]))
-    # print(inputs["input_ids"])
-    # print(inputs["labels"])
-    # print(tokenizer.decode(inputs["input_ids"]))
-    
-    
-    # prompt = [tokenizer.get_command("<|system|>")] + tokenizer.encode(sys, add_special_tokens=False)
-    # instruction_ = [tokenizer.get_command("<|user|>")] + tokenizer.encode("\n " + "\n".join([q]).strip(), add_special_tokens=False,max_length=512) + [tokenizer.get_command("<|assistant|>")]
-    # instruction = tokenizer.encode(prompt + instruction_)
-    # response = tokenizer.encode("\n" + a, add_special_tokens=False)
-    # input_ids = instruction + response + [tokenizer.eos_token_id]
-    # print(tokenizer.decode(input_ids))
+    messages = [
+        {"role": "system", "content": "你是由wdndev开发的个人助手。"},
+        {"role": "system", "content": "介绍一下中国。"}
+    ]
+    # print(tokenizer.chat_template)
 
+    text = tokenizer.apply_chat_template(
+        messages,
+        tokenize=False,
+        add_generation_prompt=True
+    )
+    model_inputs = tokenizer([text], return_tensors="pt")
+    print(tokenizer.batch_decode(model_inputs["input_ids"]))
 
 
