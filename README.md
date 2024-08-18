@@ -176,7 +176,7 @@ Base模型，采用评测方式 ppl 方式进行评测；Chat模型，采用 gen
 
 ## 4.模型部署
 
-## 4.1 网页Demo
+### 4.1 网页Demo
 
 网页Demo已部署，可以在如下网站上体验：[ModeScope Tiny LLM](https://www.modelscope.cn/studios/wdndev/tiny_llm_92m_demo/summary)
 
@@ -188,7 +188,12 @@ streamlit run web_demo.py
 
 ![web demo](doc/image/web_demo.png)
 
+### 4.2 Transformers
 
 
+### 4.3 vllm
+
+
+### 4.4 llama.cpp
 
 
