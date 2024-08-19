@@ -16,7 +16,7 @@
 
 - 公开全部数据及代码，包括预训练数据，tokenizer等；（[Tiny LLM Datasets](doc/datasets_download.md)）
 - 走通大模型整个流程：分词(Tokenizer) -> 预训练(PTM) -> 指令微调(SFT) -> 人类对齐(RLHF, DPO) -> 测评 -> 部署；
-- 公开预训练token 35B，SFT数据400w条，RL数据 17w条；
+- 公开预训练token 42B，SFT数据400w条，RL数据 17w条；
 - 训练 Tokenizer：10G 中文百科文本训练 20K 中文词表，与 Llama2 词表合并，构建Tiny LLM词表；
 - 使用 Transformers deepspeed 进行训练，支持多机多卡，支持 Zero 等优化技术；
 - 所有代码 `Bash` 脚本启动，支持不同大小的模型，如16m, 42m, 92m, 210m, 440m等；
@@ -190,10 +190,16 @@ streamlit run web_demo.py
 
 ### 4.2 Transformers
 
+Transfomers 框架部署，位于 `demo/infer_chat.py` 和 `demo/infer_func.py` 文件中，和其他LLM运行无太大区别，注意输入的拼接即可。
 
-### 4.3 vllm
+
+### 4.3 FastAPI
 
 
-### 4.4 llama.cpp
+
+### 4.4 vllm
+
+
+### 4.5 llama.cpp
 
 
