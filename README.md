@@ -199,6 +199,26 @@ Transfomers 框架部署，位于 `demo/infer_chat.py` 和 `demo/infer_func.py` 
 
 ### 4.4 vllm
 
+详细vllm部署见 [vllm](vllm/README.md)
+
+如果使用**CUDA 12 以上和PyTorch 2.1 以上**，可以直接使用以下命令安装vLLM。
+
+```shell
+pip install vllm==0.4.0
+```
+
+否则请参考vLLM官方的[安装说明](https://docs.vllm.ai/en/latest/getting_started/installation.html)。
+
+安装完成后，还需要以下操作~
+
+1. 把 `vllm/tinyllm.py` 文件复制到env环境对应的 `vllm/model_executor/models` 目录下。
+2. 然后在vllm/model_executor/models/\_\_init\_\_.py文件增加一行代码
+
+```shell
+"TinyllmForCausalLM": ("tinyllm", "TinyllmForCausalLM"),
+```
+
+> 由于模型结构是自己定义的，vllm官方未实现，需要自己手动加入
 
 ### 4.5 llama.cpp
 

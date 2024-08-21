@@ -14,8 +14,8 @@ pip install vllm==0.4.0
 
 安装完成后，还需要以下操作~
 
-1. 把vllm/tinyllm.py文件复制到env环境对应的vllm/model_executor/models目录下。
-2. 然后在vllm/model_executor/models/\_\_init\_\_.py文件增加一行代码
+1. 把 `vllm/tinyllm.py` 文件复制到env环境对应的 `vllm/model_executor/models` 目录下。
+2. 然后在 `vllm/model_executor/models/__init__.py` 文件增加一行代码
 
 ```shell
 "TinyllmForCausalLM": ("tinyllm", "TinyllmForCausalLM"),
