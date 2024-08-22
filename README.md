@@ -222,4 +222,8 @@ pip install vllm==0.4.0
 
 ### 4.5 llama.cpp
 
+详细 llama.cpp 部署见 [llama.cpp](llama.cpp/README.md)
 
+Tiny LLM 92M 模型已支持 llama.cpp C++ 推理框架，建议在 linux 环境下测试，windows效果不好；
+
+所支持 llama.cpp 为自己修改的版本，仓库链接为： [llama.cpp.tinyllm](https://github.com/wdndev/llama.cpp.tinyllm)
